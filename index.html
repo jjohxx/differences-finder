@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale:1.0">
+    <title>Branch Text Comparison</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            height: 98vh;
+            margin: 0;
+            background-color: #f2f2f2;
+            font-family: Arial, sans-serif; /* Cambia el tipo de fuente */
+        }
+        .container {
+            display: flex;
+            justify-content: space-around;
+            width: 80%;
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        .input-container, .textarea-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .input-container input {
+            margin-top: 5px;
+        }
+        textarea {
+            height: 35vh;
+            resize: none;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .result-container {
+            display: flex;
+            justify-content: space-between;
+            flex-direction: row;
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 5px;
+        }
+        .result-column-first, .result-column-second {
+            flex: 1;
+            text-align: left;
+            padding: 10px;
+        }
+        .result-column-first {
+            margin-right: 1%;
+        }
+        .result-column-second {
+            margin-left: 1%;
+        }
+        .result-label {
+            font-weight: bold;
+            font-size: 18px;
+        }
+        #compareToOriginDifferences, #originToCompareDifferences {
+            white-space: pre-line;
+        }
+        button {
+            background-color: #007BFF;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+			 margin-top: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        h3 {
+            margin-top: 20px;
+            font-size: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="input-container">
+            <h3>Origin Branch Name: <input type="text" id="originBranchInput"></h3>
+        </div>
+        <div class="input-container">
+            <h3>Compare Branch Name: <input type="text" id="compareBranchInput"></h3>
+        </div>
+    </div>
+    <div class="container">
+        <div class="textarea-container">
+            <h3>Origin Branch Text:</h3>
+            <textarea id="originTextArea" oninput="cleanTextArea('originTextArea')"></textarea>
+        </div>
+        <div class="textarea-container">
+            <h3>Compare Branch Text:</h3>
+            <textarea id="compareTextArea" oninput="cleanTextArea('compareTextArea')"></textarea>
+        </div>
+    </div>
+    <button id="findDifferences">Find Differences</button>
+    <h3>Differences Result</h3>
+    <div class="result-container">
+        <div class="result-column-first">
+            <span id="originBranchResult" class="result-label"></span>
+            <div id="originToCompareDifferences"></div>
+        </div>
+        <div class="result-column-second">
+            <span id="compareBranchResult" class="result-label"></span>
+            <div id="compareToOriginDifferences"></div>
+        </div>
+    </div>
+     <script>
+        function cleanTextArea(textAreaId) {
+            const textArea = document.getElementById(textAreaId);
+            const text = textArea.value;
+            const cleanedText = text
+                .split('\n')
+                .filter(line => line.trim() !== "" && !line.includes("com.auctionaces.") && !line.includes("testsYetToMove."))
+                .join('\n');
+            textArea.value = cleanedText;
+        }
+
+        function findDifferences() {
+            const originText = document.getElementById("originTextArea").value;
+            const compareText = document.getElementById("compareTextArea").value;
+
+            let originBranch = document.getElementById("originBranchInput").value;
+            let compareBranch = document.getElementById("compareBranchInput").value;
+
+            if (originBranch.trim() === "") {
+                originBranch = "Compare";
+            }
+
+            if (compareBranch.trim() === "") {
+                compareBranch = "Origin";
+            }
+
+            const originLines = originText.split('\n');
+            const compareLines = compareText.split('\n');
+
+            const textsMap = {
+                [originBranch]: originLines,
+                [compareBranch]: compareLines
+            };
+
+            const allLines = new Set([...originLines, ...compareLines]);
+
+            let originToCompareDifferences = "";
+            let compareToOriginDifferences = "";
+
+            for (const line of allLines) {
+                for (const [branch, branchLines] of Object.entries(textsMap)) {
+                    if (!branchLines.includes(line)) {
+                        if (branch === originBranch) {
+                            originToCompareDifferences += `${line}\n`;
+                        } else {
+                            compareToOriginDifferences += `${line}\n`;
+                        }
+                    }
+                }
+            }
+			
+            const originToCompareLines = originToCompareDifferences.split('\n');
+            const compareToOriginLines = compareToOriginDifferences.split('\n');
+
+            displayDifferences(originToCompareLines, compareToOriginLines);
+
+            document.getElementById("compareToOriginDifferences").textContent = originToCompareDifferences;
+            document.getElementById("originToCompareDifferences").textContent = compareToOriginDifferences;
+			
+            document.getElementById("compareBranchResult").textContent = (compareBranch + ' branch found:').toUpperCase();
+            document.getElementById("originBranchResult").textContent = (originBranch + ' branch found:').toUpperCase();
+        }
+		
+        function displayDifferences(originLines, compareLines) {
+            const originContainer = document.getElementById("originToCompareDifferences");
+            const compareContainer = document.getElementById("compareToOriginDifferences");
+
+            originContainer.innerHTML = "";
+            compareContainer.innerHTML = "";
+
+            originLines.forEach(line => {
+                const div = document.createElement("div");
+                div.textContent = line;
+                originContainer.appendChild(div);
+            });
+
+            compareLines.forEach(line => {
+                const div = document.createElement("div");
+                div.textContent = line;
+                compareContainer.appendChild(div);
+            });
+        }
+        
+        document.getElementById("findDifferences").addEventListener("click", findDifferences);
+    </script>
+</body>
+</html>
